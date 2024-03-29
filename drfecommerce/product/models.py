@@ -42,9 +42,7 @@ class Product(models.Model):
     category = TreeForeignKey('Category', null=True, blank=True, on_delete=models.SET_NULL)
     is_active = models.BooleanField(default=True)
     
-
     objects = ActiveQuerySet().as_manager()
-    
     
     
     def __str__(self):
@@ -57,11 +55,29 @@ class ProductLine(models.Model):
     stock = models.IntegerField()
     product = models.ForeignKey(Product, on_delete=models.CASCADE, related_name='product_line')
     is_active = models.BooleanField(default=False)
+    order_by = models.BooleanField(default=False)    
     
-
     objects = ActiveQuerySet().as_manager()
    
-
-    
     def __str__(self):
         return self.sku
+    
+    def save(self, *args, **kwargs):
+        if self.order_by:
+            ProductLine.objects.filter(product=self.product).exclude(pk=self.id).update(order_by=False)
+        super().save(*args, **kwargs)            
+
+
+
+class ProductImage(models.Model):
+    name = models.CharField(max_length=100)
+    alter_text = models.CharField(max_length=100)
+    url = models.ImageField(upload_to='productimage/')
+    productline = models.ForeignKey(ProductLine, on_delete=models.CASCADE, related_name='product_image')
+    order_by = models.BooleanField(default= False)
+
+        
+    def save(self, *args, **kwargs):
+        if self.order_by:
+            ProductImage.objects.filter(productline=self.productline).exclude(pk=self.pk).update(order_by=False)
+        return super().save(*args, **kwargs)    
